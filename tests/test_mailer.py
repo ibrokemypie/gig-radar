@@ -228,3 +228,11 @@ def test_the_message_is_from_the_sender_to_the_recipient() -> None:
     )
     assert message["From"] == "Live shows <from@example.com>"
     assert message["To"] == ADDRESS
+
+
+def test_a_javascript_ticket_link_never_reaches_the_email() -> None:
+    shown = record(acts=[pinned()])
+    shown["url"] = "javascript:alert(1)"
+    message, _ = mailer.morning_email([shown], never_sent, NOW, ADDRESS, ADDRESS, APP)
+    assert "javascript" not in message.as_string()
+    assert "Tickets: \n" in message.get_body(("plain",)).get_content()

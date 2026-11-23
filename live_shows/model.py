@@ -1,8 +1,21 @@
 """The shapes the sources, the matcher and the outputs pass between them."""
 
+import urllib.parse
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
+
+
+def web_url(url: str | None) -> str:
+    """A scraped URL fit for a link, an email or a calendar: http or https, else ''.
+
+    A seller's page is not trusted: a javascript: or data: link, or one carrying line
+    breaks, must not reach the page, an email or an ICS file.
+    """
+    parts = urllib.parse.urlsplit((url or "").strip())  # drops tabs and line breaks
+    if parts.scheme.lower() not in ("http", "https") or not parts.netloc:
+        return ""
+    return urllib.parse.urlunsplit(parts)
 
 
 class Tier(StrEnum):

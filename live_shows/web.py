@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from live_shows.library import fewer_like
+from live_shows.model import web_url
 from live_shows.settings import Settings
 from live_shows.store import SECRETS, Store
 
@@ -311,8 +312,8 @@ def _row(show: dict[str, Any], today: date, sampling: Sampling) -> str:
         details.append(f"On sale {_short_date(on_sale.date())}, {on_sale:%H:%M}")
     details.append("Seen on " + html.escape(", ".join(show["sources"])))
     details.append(
-        f'<a href="{_attr(show["url"])}" target="_blank" rel="noopener">'
-        f"Tickets on {html.escape(_site(show['url']))} ↗</a>"
+        f'<a href="{_attr(web_url(show["url"]))}" target="_blank" rel="noopener">'
+        f"Tickets on {html.escape(_site(web_url(show['url'])))} ↗</a>"
     )
     return (
         f'<details class="row" id="{_attr(show["show_id"])}"'
@@ -357,7 +358,7 @@ def _previews(record: dict[str, Any] | None) -> str:
     if not record["items"]:
         if record["apple"]:
             return (
-                f'<a class="ls-apple" href="{_attr(record["apple"])}" target="_blank"'
+                f'<a class="ls-apple" href="{_attr(web_url(record["apple"]))}" target="_blank"'
                 ' rel="noopener">No previews · Apple Music ↗</a>'
             )
         return '<div class="hint">Not on Apple Music</div>'
@@ -365,12 +366,14 @@ def _previews(record: dict[str, Any] | None) -> str:
     song = " song" if is_song else ""
     cards = [
         f'<div class="ls-vid{song}"><button type="button" class="ls-thumb{song}"'
-        f' data-preview="{_attr(item["preview"])}" data-kind="{"audio" if is_song else "video"}"'
-        f' aria-label="Play {_attr(item["name"])}"><img src="{_attr(item["art"])}" alt=""'
+        f' data-preview="{_attr(web_url(item["preview"]))}"'
+        f' data-kind="{"audio" if is_song else "video"}"'
+        f' aria-label="Play {_attr(item["name"])}"><img src="{_attr(web_url(item["art"]))}" alt=""'
         f' loading="lazy"><span class="ls-playicon">{"♪" if is_song else "▶"}</span></button>'
         f'<div class="ls-vname">{html.escape(item["name"])}</div>'
         f'<div class="ls-vmeta">{"song" if is_song else "video"} preview · '
-        f'<a href="{_attr(item["url"])}" target="_blank" rel="noopener">Apple ↗</a></div></div>'
+        f'<a href="{_attr(web_url(item["url"]))}" target="_blank" rel="noopener">Apple ↗</a>'
+        "</div></div>"
         for item in record["items"]
     ]
     return f'<div class="ls-strip">{"".join(cards)}</div>'

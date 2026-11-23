@@ -19,6 +19,7 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 from typing import Any
 from xml.etree import ElementTree
 
+from live_shows.model import web_url
 from live_shows.store import Store
 
 LIVE_SHOWS_SLUG = "live-shows"
@@ -208,7 +209,7 @@ def event_ics(show: dict[str, Any], uid: str, app_url: str, stamp: datetime, zon
     description = "\n".join(
         [
             *(f"{act['name']}: {act['why']}" for act in show["acts"]),
-            f"Tickets: {show['url']}",
+            f"Tickets: {web_url(show['url'])}",
             f"{app_url}#{show['show_id']}",
         ]
     )
@@ -232,7 +233,7 @@ def event_ics(show: dict[str, Any], uid: str, app_url: str, stamp: datetime, zon
         f"SUMMARY:{_escape(summary)}",
         f"LOCATION:{_escape(show['venue'])}",
         f"DESCRIPTION:{_escape(description)}",
-        f"URL:{show['url']}",
+        f"URL:{web_url(show['url'])}",
         "END:VEVENT",
         "END:VCALENDAR",
     ]
@@ -316,7 +317,11 @@ def _utc(when: datetime) -> str:
 
 
 def _escape(text: str) -> str:
-    """Text as an iCalendar value: backslash, semicolon, comma and newline escaped."""
+    """Text as an iCalendar value: backslash, semicolon, comma and line breaks escaped.
+
+    A CR or CRLF from a scraped title becomes \\n too, so no text can start a property.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     return text.replace("\\", "\\\\").replace(";", r"\;").replace(",", r"\,").replace("\n", r"\n")
 
 

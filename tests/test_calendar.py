@@ -364,3 +364,14 @@ def test_a_missing_tickets_calendar_still_lets_the_shows_calendar_sync(store: St
     assert list(dav.events) == [
         f"{HOME}live-shows/2026-11-08~dance-gavin-dance@live-shows.example.ics"
     ]
+
+
+def test_a_crlf_or_javascript_url_cannot_inject_into_an_event() -> None:
+    record = show_record(show(title="x"))
+    record["venue"] = "Hall\r\nATTENDEE:mailto:evil@example.com\rX"
+    record["url"] = "javascript:alert(1)"
+    ics = calendar.event_ics(record, "u@x", APP, at("2026-10-20 07:00"), MELBOURNE)
+    assert "\r\nATTENDEE" not in ics
+    assert r"LOCATION:Hall\nATTENDEE:mailto:evil@example.com\nX" in ics
+    assert "javascript" not in ics
+    assert "\r\nURL:\r\n" in ics

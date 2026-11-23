@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from email.message import EmailMessage
 from typing import Any
 
+from live_shows.model import web_url
 from live_shows.settings import Smtp
 
 IMPLICIT_TLS_PORT = 465
@@ -223,7 +224,7 @@ def _text(sections: list[tuple[str, list[dict]]], app_url: str) -> str:
                     [
                         _headline(show),
                         *_details(show),
-                        f"Tickets: {show['url']}",
+                        f"Tickets: {web_url(show['url'])}",
                         f"Got tickets? {app_url}#{show['show_id']}",
                     ]
                 )
@@ -241,7 +242,7 @@ def _html(sections: list[tuple[str, list[dict]]], app_url: str) -> str:
             parts.append(
                 "<p style='font:14px/1.4 sans-serif'>"
                 f"<b>{html.escape(_headline(show))}</b><br>{details}<br>"
-                f"<a href='{html.escape(show['url'])}'>Tickets</a> · "
+                f"<a href='{html.escape(web_url(show['url']))}'>Tickets</a> · "
                 f"<a href='{html.escape(app_url)}#{html.escape(show['show_id'])}'>Got tickets</a>"
                 "</p>"
             )

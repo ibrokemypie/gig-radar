@@ -513,3 +513,23 @@ def test_sessions_expire_and_end_when_the_password_changes(store, monkeypatch) -
 def test_the_session_cookie_lasts_thirty_days(locked) -> None:
     response = request(locked, "POST", "/login", "password=opensesame")
     assert f"Max-Age={30 * 86400}" in response.getheader("Set-Cookie")
+
+
+def test_only_web_links_reach_the_page() -> None:
+    from live_shows.model import web_url
+
+    assert web_url("https://tickets.example/1") == "https://tickets.example/1"
+    assert web_url(" HTTP://x.example/a\r\nb ") == "http://x.example/ab"
+    for bad in ["javascript:alert(1)", "data:text/html,<b>", "//no-scheme.example", "", None,
+                "https://"]:  # fmt: skip
+        assert web_url(bad) == ""
+    shown = records(show())
+    shown[0]["url"] = "javascript:alert(1)"
+    sampled = web.Sampling(samples={"spiritbox": {"apple": "javascript:a()", "kind": "none",
+                                              "items": []}})  # fmt: skip
+    maybe = records(show("2026-11-01", [artist("Spiritbox", Tier.MAYBE)]))
+    html = web.page(shown + maybe, NONE_SAVED, None, TODAY, sampling=sampled)
+    assert "javascript" not in html
+    songs = {"apple": None, "kind": "songs", "items": [
+        {"name": "S", "art": "javascript:x()", "preview": "data:audio/x", "url": "vbscript:y"}]}  # fmt: skip
+    assert not any(bad in web._previews(songs) for bad in ("javascript", "data:", "vbscript"))

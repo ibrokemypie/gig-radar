@@ -89,6 +89,14 @@ def test_the_smtp_user_falls_back_to_the_sender() -> None:
         ({"MAIL_PROVIDER": "", "MAIL_ADDRESS": "", "IMAP_HOST": "h"}, "IMAP_USER is not set"),
         ({"MAIL_PROVIDER": "", "MAIL_ADDRESS": "", "CALDAV_URL": "h"}, "CALDAV_USER is not set"),
         ({"SMTP_PORT": "submission"}, "SMTP_PORT is not a number"),
+        ({"HOME_LATITUDE": "91"}, "HOME_LATITUDE must be between -90 and 90"),
+        ({"HOME_LATITUDE": "nan"}, "HOME_LATITUDE must be between"),
+        ({"HOME_LONGITUDE": "-180.5"}, "HOME_LONGITUDE must be between -180 and 180"),
+        ({"HOME_LONGITUDE": "inf"}, "HOME_LONGITUDE must be between"),
+        ({"HOME_RADIUS_KM": "0"}, "HOME_RADIUS_KM must be a number of km above 0"),
+        ({"HOME_RADIUS_KM": "-5"}, "HOME_RADIUS_KM must be"),
+        ({"HOME_RADIUS_KM": "nan"}, "HOME_RADIUS_KM must be"),
+        ({"HOME_RADIUS_KM": "inf"}, "HOME_RADIUS_KM must be"),
     ],
 )
 def test_a_bad_or_missing_setting_names_itself(changes: dict, message: str) -> None:
@@ -129,3 +137,8 @@ def test_the_home_city_and_state_words() -> None:
     assert settings().place.words == {"vic"}
     outside = settings(HOME_COUNTRY="GB", HOME_STATE="", HOME_TIMEZONE="Europe/London")
     assert outside.place.words == set()
+
+
+def test_the_ends_of_each_range_are_allowed() -> None:
+    edge = settings(HOME_LATITUDE="-90", HOME_LONGITUDE="180", HOME_RADIUS_KM="0.5")
+    assert (edge.place.latitude, edge.place.longitude, edge.place.radius_km) == (-90, 180, 0.5)

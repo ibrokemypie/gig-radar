@@ -231,9 +231,11 @@ def _place(get: Callable[[str], str | None], need: Callable[[str], str]) -> Plac
         raise SettingsError(f"HOME_STATE must be one of {', '.join(AU_STATES)} in Australia")
     return Place(
         zone=zone,
-        latitude=_number(need, "HOME_LATITUDE", float),
-        longitude=_number(need, "HOME_LONGITUDE", float),
-        radius_km=_number(need, "HOME_RADIUS_KM", float) if get("HOME_RADIUS_KM") else 150.0,
+        latitude=_within(_number(need, "HOME_LATITUDE", float), "HOME_LATITUDE", -90, 90),
+        longitude=_within(_number(need, "HOME_LONGITUDE", float), "HOME_LONGITUDE", -180, 180),
+        radius_km=_radius(_number(need, "HOME_RADIUS_KM", float))
+        if get("HOME_RADIUS_KM")
+        else 150.0,
         country=country,
         state=state,
         city=get("HOME_CITY"),
@@ -247,6 +249,20 @@ def _number[T: (int, float)](need: Callable[[str], str], name: str, kind: type[T
         return kind(text)
     except ValueError as error:
         raise SettingsError(f"{name} is not a number: {text}") from error
+
+
+def _within(value: float, name: str, low: float, high: float) -> float:
+    """A coordinate, refused outside [low, high]; nan is outside every range."""
+    if not low <= value <= high:
+        raise SettingsError(f"{name} must be between {low} and {high}, not {value}")
+    return value
+
+
+def _radius(value: float) -> float:
+    """A radius in km: more than 0 and finite."""
+    if not 0 < value < math.inf:
+        raise SettingsError(f"HOME_RADIUS_KM must be a number of km above 0, not {value}")
+    return value
 
 
 def _user(user: str | None, service: str) -> str:

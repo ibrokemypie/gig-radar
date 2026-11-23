@@ -300,11 +300,18 @@ def run_mail_steps(
     at: datetime,
     dry_run: bool,
 ) -> None:
-    """Ticket emails, the calendars and the emails: each one set up and with a password."""
+    """Ticket emails, the calendars and the emails: each one set up and with a password.
+
+    Each step stands alone: one that fails is noted in `outcome` and the next still runs,
+    so the morning email goes out whatever the inbox or the calendars did.
+    """
     if settings.imap and (password := store.password("imap")):
-        outcome.counts["tickets_from_email"] = mark_ticket_emails(
-            settings.imap, services, store, password, at.date()
-        )
+        try:
+            outcome.counts["tickets_from_email"] = mark_ticket_emails(
+                settings.imap, services, store, password, at.date()
+            )
+        except Exception as error:  # the calendars and the email still run
+            outcome.failures.append(f"ticket emails: {error}")
     if settings.caldav and (password := store.password("caldav")) and not dry_run:
         dav = settings.caldav
         calendars = calendar.Calendars(
@@ -323,8 +330,14 @@ def run_mail_steps(
                 )
             )
         except calendar.CalendarError as error:  # the morning email still goes out
+            outcome.counts.update(error.counts)
+            outcome.failures.append(f"calendar: {error}")
+        except Exception as error:
             outcome.failures.append(f"calendar: {error}")
     if settings.smtp and (password := store.password("smtp")):
-        outcome.sent = send_emails(
-            settings.smtp, settings.app_url, services, store, password, at, dry_run
-        )
+        try:
+            outcome.sent = send_emails(
+                settings.smtp, settings.app_url, services, store, password, at, dry_run
+            )
+        except Exception as error:  # recorded; the run already kept what it found
+            outcome.failures.append(f"email: {error}")

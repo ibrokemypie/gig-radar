@@ -330,3 +330,37 @@ def test_uids_and_prodid_follow_the_page_address() -> None:
         show_record(show()), "u@x", "https://shows.example/", at("2026-10-20 07:00"), MELBOURNE
     )
     assert "PRODID:-//shows.example//live-shows//EN" in ics
+
+
+def test_an_unreachable_server_is_a_calendar_error(monkeypatch) -> None:
+    def urlopen(request, timeout):
+        raise urllib.error.URLError("timed out")
+
+    monkeypatch.setattr(calendar.urllib.request, "urlopen", urlopen)
+    with pytest.raises(CalendarError, match="PROPFIND https://x/: <urlopen error timed out>"):
+        calendar.web_request(ADDRESS, "pw")("PROPFIND", "https://x/", b"", {})
+
+
+def test_an_answer_that_is_not_xml_is_a_calendar_error() -> None:
+    def server(method, url, body, headers):
+        return 207, "<html>oops"
+
+    with pytest.raises(CalendarError, match="not XML"):
+        Calendars(server, ROOT).collections()
+
+
+def test_a_missing_tickets_calendar_still_lets_the_shows_calendar_sync(store: Store) -> None:
+    dav = FakeDav({"personal": "Personal", "live-shows": "Live shows"})
+    store.record_shows([show("2026-11-08", [artist("Dance Gavin Dance")])], at("2026-10-20 07:00"))
+    calendars = Calendars(dav, ROOT, "Live shows", "Missing")
+
+    with pytest.raises(
+        CalendarError, match=r"^tickets calendar: no calendar named Missing"
+    ) as error:
+        calendar.sync(calendars, store, records(store), APP, date(2026, 10, 20),
+                      at("2026-10-20 07:00"), MELBOURNE)  # fmt: skip
+
+    assert error.value.counts == {"written": 1, "removed": 0}
+    assert list(dav.events) == [
+        f"{HOME}live-shows/2026-11-08~dance-gavin-dance@live-shows.example.ics"
+    ]

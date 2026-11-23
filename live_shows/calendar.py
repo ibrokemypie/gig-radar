@@ -32,7 +32,14 @@ Request = Callable[[str, str, bytes | None, dict[str, str]], tuple[int, str]]
 
 
 class CalendarError(RuntimeError):
-    """The CalDAV server refused a request."""
+    """The CalDAV server refused a request, or could not be reached.
+
+    From sync, `counts` holds what the calendars that did sync wrote and removed.
+    """
+
+    def __init__(self, message: str, counts: dict[str, int] | None = None) -> None:
+        super().__init__(message)
+        self.counts = counts or {}
 
 
 @dataclass(frozen=True)
@@ -58,6 +65,8 @@ def web_request(user: str, password: str) -> Request:
                 return response.status, response.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as error:
             return error.code, error.read().decode("utf-8", errors="replace")
+        except OSError as error:  # unreachable, refused, timed out, a bad certificate
+            raise CalendarError(f"{method} {url}: {error}") from error
 
     return request
 
@@ -173,7 +182,10 @@ class Calendars:
         status, text = self.request(method, url, body, {**_XML, **headers})
         if status != 207:
             raise CalendarError(f"{method} {url}: {status} {text[:200]}")
-        return ElementTree.fromstring(text)
+        try:
+            return ElementTree.fromstring(text)
+        except ElementTree.ParseError as error:
+            raise CalendarError(f"{method} {url}: not XML: {error}") from error
 
 
 _XML = {"Content-Type": "application/xml; charset=utf-8"}
@@ -238,9 +250,11 @@ def sync(
 ) -> dict[str, int]:
     """Bring both calendars in line with the list; returns the events written and removed.
 
-    "Live shows" holds the loved shows and those with tickets, and loses a future show
-    that is no longer listed (cancelled) or no longer loved. The tickets calendar loses a
-    show only when Got tickets is taken back, never because a seller stopped listing it.
+    Each calendar syncs on its own: when one fails, the other still syncs, and then a
+    CalendarError names every failure and carries the counts. "Live shows" holds the
+    loved shows and those with tickets, and loses a future show that is no longer listed
+    (cancelled) or no longer loved. The tickets calendar loses a show only when Got
+    tickets is taken back, never because a seller stopped listing it.
     """
     counts = {"written": 0, "removed": 0}
     shows_domain = uid_domain(app_url)
@@ -248,30 +262,53 @@ def sync(
     not_bought = {event_uid(s, tickets_domain) for s in shows if not s["bought"]}
     loved_or_bought = [s for s in shows if s["tier"] == "love" or s["bought"]]
     targets = [
-        (calendars.live_shows(), shows_domain, loved_or_bought, None),
-        (calendars.tickets(), tickets_domain, [s for s in shows if s["bought"]], not_bought),
-    ]
-    for collection, domain, wanted, removable in targets:
-        store.adopt_calendar_entries(collection.href)
-        known = store.calendar_entries(collection.href)
-        for show in wanted:
-            uid = event_uid(show, domain)
-            ics = event_ics(show, uid, app_url, stamp, zone)
-            digest = hashlib.sha256(_without_stamp(ics).encode()).hexdigest()
-            if known.get(uid) != digest:
-                calendars.put(collection, uid, ics)
-                store.set_calendar_entry(collection.href, uid, digest)
-                counts["written"] += 1
-        wanted_uids = {event_uid(show, domain) for show in wanted}
-        for uid in known.keys() - wanted_uids:
-            if date.fromisoformat(uid[:10]) < today or (
-                removable is not None and uid not in removable
-            ):
-                continue
-            calendars.delete(collection, uid)
-            store.set_calendar_entry(collection.href, uid, None)
-            counts["removed"] += 1
+        ("shows", calendars.live_shows, shows_domain, loved_or_bought, None),
+        ("tickets", calendars.tickets, tickets_domain, [s for s in shows if s["bought"]],
+         not_bought),
+    ]  # fmt: skip
+    errors = []
+    for name, find, domain, wanted, removable in targets:
+        try:
+            _sync_one(calendars, store, find(), domain, wanted, removable, counts, app_url, today,
+                      stamp, zone)  # fmt: skip
+        except CalendarError as error:
+            errors.append(f"{name} calendar: {error}")
+    if errors:
+        raise CalendarError("; ".join(errors), counts)
     return counts
+
+
+def _sync_one(
+    calendars: Calendars,
+    store: Store,
+    collection: Collection,
+    domain: str,
+    wanted: list[dict[str, Any]],
+    removable: set[str] | None,
+    counts: dict[str, int],
+    app_url: str,
+    today: date,
+    stamp: datetime,
+    zone: tzinfo,
+) -> None:
+    """Bring one calendar in line with the shows it should hold, adding to `counts`."""
+    store.adopt_calendar_entries(collection.href)
+    known = store.calendar_entries(collection.href)
+    for show in wanted:
+        uid = event_uid(show, domain)
+        ics = event_ics(show, uid, app_url, stamp, zone)
+        digest = hashlib.sha256(_without_stamp(ics).encode()).hexdigest()
+        if known.get(uid) != digest:
+            calendars.put(collection, uid, ics)
+            store.set_calendar_entry(collection.href, uid, digest)
+            counts["written"] += 1
+    wanted_uids = {event_uid(show, domain) for show in wanted}
+    for uid in known.keys() - wanted_uids:
+        if date.fromisoformat(uid[:10]) < today or (removable is not None and uid not in removable):
+            continue
+        calendars.delete(collection, uid)
+        store.set_calendar_entry(collection.href, uid, None)
+        counts["removed"] += 1
 
 
 def _utc(when: datetime) -> str:

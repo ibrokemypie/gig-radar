@@ -230,7 +230,7 @@ def test_a_calendar_refusal_is_reported_and_the_email_still_goes(config: Setting
     )
 
     assert [f for f in outcome.failures if f.startswith("calendar:")] == [
-        "calendar: PUT 2026-10-20~la-dispute@shows.example: 403 Forbidden"
+        "calendar: shows calendar: PUT 2026-10-20~la-dispute@shows.example: 403 Forbidden"
     ]
     assert [m["Subject"] for m in outbox.sent] == [
         "New show: La Dispute at 170 Russell, Tue 20 Oct"
@@ -401,3 +401,45 @@ def test_each_mail_step_runs_only_when_it_is_set_up(tmp_path) -> None:
     assert dav.requests == []
     assert starttls.sent == []
     assert [m["To"] for m in implicit.sent] == ["listener@example.com"]
+
+
+def test_each_failing_mail_step_is_reported_and_the_rest_still_run(config: Settings) -> None:
+    store = Store(config.database)
+    store.set_secret("mail_password", "pw")
+    outbox = Outbox()
+
+    def no_inbox(host, ssl_context):
+        raise OSError("inbox unreachable")
+
+    def no_calendar(user, password):
+        def request(method, url, body, headers):
+            raise RuntimeError("calendar exploded")
+
+        return request
+
+    run = Services(fetcher=FakeWeb({**plex_library(), **sources()}), now=lambda: TUESDAY,
+                   smtp=outbox, smtp_ssl=Outbox(), imap=no_inbox, caldav=no_calendar)  # fmt: skip
+    outcome = refresh(config, run, store)
+
+    assert outcome.failures == ["ticket emails: inbox unreachable", "calendar: calendar exploded"]
+    assert [m["Subject"] for m in outbox.sent] == [
+        "New show: La Dispute at 170 Russell, Tue 20 Oct"
+    ]
+
+
+def test_a_failing_email_is_reported_not_raised(config: Settings) -> None:
+    store = Store(config.database)
+    store.set_secret("mail_password", "pw")
+
+    class Refused(Outbox):
+        def send_message(self, message):
+            raise OSError("relay refused")
+
+    run = Services(fetcher=FakeWeb({**plex_library(), **sources()}), now=lambda: TUESDAY,
+                   smtp=Refused(), imap=FakeImap({}),
+                   caldav=lambda user, password: FakeDav({"personal": "Personal"}))  # fmt: skip
+    outcome = refresh(config, run, store)
+
+    assert outcome.failures == ["email: relay refused"]
+    assert outcome.counts["written"] == 1
+    assert store.last_run()["ok"] == 0

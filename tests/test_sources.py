@@ -146,7 +146,8 @@ def test_oztix_reads_bands_performances_and_guests_and_drops_cancellations(web) 
     assert by_title["Riverboats Music Festival 2027"].is_festival
     search_url, headers = fake.requests[-1]
     assert "Venue.State%3AVIC" in search_url
-    assert headers and headers["X-Algolia-API-Key"] == "97457c1510bf43f21279078b2c848ef1"
+    assert headers and headers["X-Algolia-API-Key"] == "00000000000000000000000000000beef"
+    assert search_url.startswith("https://TESTAPPID1-dsn.algolia.net/")
 
 
 def test_oztix_fails_loudly_on_an_empty_search(web) -> None:

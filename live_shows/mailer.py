@@ -9,6 +9,7 @@ password typed on the settings page: STARTTLS, or TLS from the start on port 465
 
 import html
 import smtplib
+import ssl
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from email.message import EmailMessage
@@ -117,11 +118,18 @@ def send(
     smtp: Callable[..., smtplib.SMTP] = smtplib.SMTP,
     smtp_ssl: Callable[..., smtplib.SMTP] = smtplib.SMTP_SSL,
 ) -> None:
-    """Send one message, signed in to the server: STARTTLS, or TLS from the start on 465."""
-    implicit = server.port == IMPLICIT_TLS_PORT
-    with (smtp_ssl if implicit else smtp)(server.host, server.port, timeout=60) as connection:
-        if not implicit:
-            connection.starttls()
+    """Send one message, signed in to the server: STARTTLS, or TLS from the start on 465.
+
+    Either way the server's certificate and host name are verified.
+    """
+    context = ssl.create_default_context()
+    if server.port == IMPLICIT_TLS_PORT:
+        opened = smtp_ssl(server.host, server.port, timeout=60, context=context)
+    else:
+        opened = smtp(server.host, server.port, timeout=60)
+    with opened as connection:
+        if server.port != IMPLICIT_TLS_PORT:
+            connection.starttls(context=context)
         connection.login(server.user, password)
         connection.send_message(message)
 

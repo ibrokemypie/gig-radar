@@ -68,7 +68,7 @@ class Outbox:
     def __init__(self):
         self.sent = []
 
-    def __call__(self, host, port, timeout):
+    def __call__(self, host, port, timeout, context=None):
         return self
 
     def __enter__(self):
@@ -77,7 +77,7 @@ class Outbox:
     def __exit__(self, *_exc):
         return None
 
-    def starttls(self):
+    def starttls(self, context):
         pass
 
     def login(self, user, password):

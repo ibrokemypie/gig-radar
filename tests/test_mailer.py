@@ -1,3 +1,4 @@
+import ssl
 from datetime import timedelta
 
 from conftest import artist, at, show
@@ -157,14 +158,21 @@ def test_monday_with_only_loved_shows_has_no_maybe_line() -> None:
     assert draft[1] == [("digest", [])]
 
 
+def verifies(context: ssl.SSLContext) -> bool:
+    """Whether a TLS context checks the certificate and the host name."""
+    return context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname
+
+
 class FakeSMTP:
     """An SMTP connection recording what was asked of it."""
 
     def __init__(self, calls: list):
         self.calls = calls
 
-    def __call__(self, host, port, timeout):
+    def __call__(self, host, port, timeout, context=None):
         self.calls.append(("connect", host, port))
+        if context is not None:
+            self.calls.append(("context", verifies(context)))
         return self
 
     def __enter__(self):
@@ -173,8 +181,8 @@ class FakeSMTP:
     def __exit__(self, *_exc):
         self.calls.append(("quit",))
 
-    def starttls(self):
-        self.calls.append(("starttls",))
+    def starttls(self, context):
+        self.calls.append(("starttls", verifies(context)))
 
     def login(self, user, password):
         self.calls.append(("login", user, password))
@@ -191,7 +199,7 @@ def test_send_signs_in_over_starttls() -> None:
     mailer.send(message, SERVER, "app-pass", FakeSMTP(calls), FakeSMTP(["wrong"]))
     assert calls == [
         ("connect", "smtp.example.com", 587),
-        ("starttls",),
+        ("starttls", True),
         ("login", "login", "app-pass"),
         ("send", message["Subject"]),
         ("quit",),
@@ -207,6 +215,7 @@ def test_send_on_port_465_is_tls_from_the_start() -> None:
     mailer.send(message, server, "pw", FakeSMTP(["wrong"]), FakeSMTP(calls))
     assert calls == [
         ("connect", "smtp.example.com", 465),
+        ("context", True),
         ("login", "login", "pw"),
         ("send", message["Subject"]),
         ("quit",),

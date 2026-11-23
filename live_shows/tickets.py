@@ -10,6 +10,7 @@ import email.policy
 import email.utils
 import imaplib
 import re
+import ssl
 from collections.abc import Callable
 from datetime import date, timedelta
 from email.message import EmailMessage
@@ -82,10 +83,13 @@ def read_confirmations(
     password: str,
     today: date,
     already_read: Callable[[str], bool],
-    imap: Callable[[str], imaplib.IMAP4] = imaplib.IMAP4_SSL,
+    imap: Callable[..., imaplib.IMAP4] = imaplib.IMAP4_SSL,
 ) -> list[tuple[str, EmailMessage]]:
-    """The seller messages of the last two weeks not read before, with their Message-IDs."""
-    connection = imap(host)
+    """The seller messages of the last two weeks not read before, with their Message-IDs.
+
+    The inbox is reached over TLS with its certificate and host name verified.
+    """
+    connection = imap(host, ssl_context=ssl.create_default_context())
     try:
         connection.login(user, password)
         connection.select("INBOX", readonly=True)

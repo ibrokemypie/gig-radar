@@ -47,7 +47,7 @@ class Services:
     now: Callable[[], datetime]
     smtp: Callable[..., Any] = mailer.smtplib.SMTP
     smtp_ssl: Callable[..., Any] = mailer.smtplib.SMTP_SSL
-    imap: Callable[[str], Any] = tickets.imaplib.IMAP4_SSL
+    imap: Callable[..., Any] = tickets.imaplib.IMAP4_SSL
     caldav: Callable[[str, str], calendar.Request] = calendar.web_request
 
 

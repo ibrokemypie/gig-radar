@@ -1,3 +1,4 @@
+import ssl
 from datetime import date
 from email.message import EmailMessage
 
@@ -71,8 +72,10 @@ class FakeImap:
         self.numbered: dict[str, EmailMessage] = {}
         self.calls: list[tuple] = []
 
-    def __call__(self, host: str) -> "FakeImap":
+    def __call__(self, host: str, ssl_context: ssl.SSLContext) -> "FakeImap":
         self.calls.append(("connect", host))
+        verified = ssl_context.verify_mode == ssl.CERT_REQUIRED and ssl_context.check_hostname
+        self.calls.append(("verified", verified))
         return self
 
     def login(self, user, password):
@@ -113,4 +116,5 @@ def test_read_confirmations_skips_messages_already_read_and_signs_out() -> None:
 
     assert [message_id for message_id, _ in found] == ["<new@x>"]
     assert ("select", "INBOX", True) in imap.calls
+    assert imap.calls[:2] == [("connect", "imap.example.com"), ("verified", True)]
     assert imap.calls[-1] == ("logout",)

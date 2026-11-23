@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable
-from datetime import datetime, timedelta, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from datetime import time as clock
 from pathlib import Path
 
@@ -43,6 +43,15 @@ def next_run(now: datetime, at: clock) -> datetime:
     return today if today > now else today + timedelta(days=1)
 
 
+def seconds_between(start: datetime, end: datetime) -> float:
+    """Elapsed seconds from one time to another, across any change of UTC offset.
+
+    Python subtracts two times in one zone by their clocks, ignoring a change of offset
+    between them, so both are taken to UTC first.
+    """
+    return (end.astimezone(UTC) - start.astimezone(UTC)).total_seconds()
+
+
 def run_daily(
     at: clock,
     zone: tzinfo,
@@ -50,12 +59,16 @@ def run_daily(
     now: Callable[[tzinfo], datetime] = datetime.now,
     sleep: Callable[[float], None] = time.sleep,
 ) -> None:
-    """Run `job` each day at `at` local time, for ever."""
+    """Run `job` each day at `at` local time, for ever.
+
+    The sleep is real elapsed time, so a daylight-saving change between now and the
+    run does not move it off `at`.
+    """
     while True:
         start = now(zone)
         due = next_run(start, at)
         log.info("next refresh at %s", due.isoformat())
-        sleep((due - start).total_seconds())
+        sleep(seconds_between(start, due))
         job()
 
 

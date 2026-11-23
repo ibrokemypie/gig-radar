@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from datetime import time as clock
 
 import pytest
@@ -106,3 +106,28 @@ def test_run_daily_sleeps_until_each_run_then_runs_the_job() -> None:
         )
     assert slept == [1800.0, 1800.0]
     assert ran == [1, 1]
+
+
+@pytest.mark.parametrize(
+    ("evening", "hours"),
+    [
+        (datetime(2026, 4, 4, 20, 0), 11.5),  # clocks go back an hour that night
+        (datetime(2026, 10, 3, 20, 0), 9.5),  # clocks go forward an hour that night
+        (datetime(2026, 6, 1, 20, 0), 10.5),
+    ],
+)
+def test_the_sleep_to_the_next_run_is_real_time_across_daylight_saving(evening, hours) -> None:
+    start = evening.replace(tzinfo=MELBOURNE)
+    slept = []
+
+    class Stop(Exception):
+        pass
+
+    def job() -> None:
+        raise Stop
+
+    with pytest.raises(Stop):
+        main_module.run_daily(clock(6, 30), MELBOURNE, job, lambda zone: start, slept.append)
+    assert slept == [hours * 3600]
+    woke = (start.astimezone(UTC) + timedelta(seconds=slept[0])).astimezone(MELBOURNE)
+    assert (woke.hour, woke.minute) == (6, 30)

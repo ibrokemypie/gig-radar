@@ -11,6 +11,17 @@ near home. You get:
 - a Monday email of loved and kept artists' shows and new maybes;
 - shows on your calendar, and tickets marked from your seller emails.
 
+![The page: pinned shows on top, then the rest by month](docs/screenshots/show-list.png)
+
+![A show opened: the bill, sale date, ticket link and previews to sample](docs/screenshots/show-opened-with-samples.png)
+
+A maybe opened, with previews to keep or trim.
+
+<img src="docs/screenshots/show-list-phone.png" alt="The page at phone width" width="300">
+<img src="docs/screenshots/monday-email.png" alt="The Monday email: loved shows with ticket links" width="400">
+
+The page on a phone, and the Monday email.
+
 How the tiers and sources work is in [docs/design.md](docs/design.md).
 
 It is a single-user tool: one install serves one listener. Run one per person.

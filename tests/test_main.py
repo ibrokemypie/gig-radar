@@ -133,3 +133,16 @@ def test_the_sleep_to_the_next_run_is_real_time_across_daylight_saving(evening, 
     assert slept == [hours * 3600]
     woke = (start.astimezone(UTC) + timedelta(seconds=slept[0])).astimezone(MELBOURNE)
     assert (woke.hour, woke.minute) == (6, 30)
+
+
+@pytest.mark.parametrize("command", [["serve"], ["refresh"], ["schedule"]])
+def test_a_database_that_cannot_be_written_exits_two_naming_the_setting(
+    environment, monkeypatch, capsys, command
+) -> None:
+    blocker = environment / "not-a-directory"
+    blocker.write_text("")
+    monkeypatch.setenv("LIVE_SHOWS_DB", str(blocker / "db.sqlite"))
+    monkeypatch.setattr("live_shows.web.serve", lambda *args: pytest.fail("served"))
+    monkeypatch.setattr(main_module, "run_daily", lambda *args: pytest.fail("scheduled"))
+    assert main_module.main(command) == 2
+    assert "LIVE_SHOWS_DB is" in capsys.readouterr().err

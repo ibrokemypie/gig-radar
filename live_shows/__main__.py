@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import shutil
+import sqlite3
 import sys
 import tempfile
 import time
@@ -20,6 +21,17 @@ from live_shows.store import Store
 log = logging.getLogger("live_shows")
 
 
+def open_store(path: Path) -> Store:
+    """The database at `path`; one that cannot be made or opened is a settings error."""
+    try:
+        return Store(path)
+    except (OSError, sqlite3.Error) as error:
+        raise SettingsError(
+            f"LIVE_SHOWS_DB is {path}, which cannot be opened ({error}); set it to a writable"
+            " file, such as ./live-shows.sqlite outside Docker"
+        ) from error
+
+
 def run_refresh(settings: Settings, dry_run: bool) -> int:
     """One refresh; the exit status is 1 when it had any failure."""
     database = settings.database
@@ -30,7 +42,7 @@ def run_refresh(settings: Settings, dry_run: bool) -> int:
         database = scratch
     zone = settings.place.zone
     services = Services(fetcher=WebFetcher(), now=lambda: datetime.now(zone))
-    outcome = refresh(settings, services, Store(database), dry_run=dry_run)
+    outcome = refresh(settings, services, open_store(database), dry_run=dry_run)
     for failure in outcome.failures:
         print(f"FAILED {failure}", file=sys.stderr)
     for warning in outcome.warnings:
@@ -98,18 +110,19 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     try:
         settings = from_environment(os.environ)
+        if arguments.command == "serve":
+            from live_shows.web import serve
+
+            serve(open_store(settings.database), settings, arguments.port)
+            return 0
+        if arguments.command == "schedule":
+            open_store(settings.database)
+            run_daily(arguments.at, settings.place.zone, lambda: run_refresh(settings, False))
+            return 0
+        return run_refresh(settings, arguments.dry_run)
     except SettingsError as error:
         print(f"live_shows: {error}", file=sys.stderr)
         return 2
-    if arguments.command == "serve":
-        from live_shows.web import serve
-
-        serve(Store(settings.database), settings, arguments.port)
-        return 0
-    if arguments.command == "schedule":
-        run_daily(arguments.at, settings.place.zone, lambda: run_refresh(settings, False))
-        return 0
-    return run_refresh(settings, arguments.dry_run)
 
 
 if __name__ == "__main__":

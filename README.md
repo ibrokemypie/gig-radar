@@ -122,8 +122,10 @@ These go in Settings on the page.
 
 Plex explains how to find one in
 [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
-Put it in `PLEX_TOKEN`. If the app runs beside your Plex server, you can mount
-the server's `Preferences.xml` and set `PLEX_PREFERENCES` instead.
+Put it in `PLEX_TOKEN`. Prefer the token. If the app runs beside your Plex
+server, you can instead mount the server's `Preferences.xml` and set
+`PLEX_PREFERENCES`, but the file must be readable by the container's user
+(uid 10001), and Plex usually keeps it readable by its own user only.
 
 ### Last.fm instead of Plex
 
@@ -179,11 +181,17 @@ it. Bad settings exit with status 2 and name the setting.
 
 ## Without Docker
 
-It needs Python 3.13 and nothing else at runtime.
+It needs Python 3.13 and nothing else at runtime. Set the same settings in the
+environment, and point the database at a file you can write, since the default
+`/data` is the container's volume:
 
+    export LIVE_SHOWS_DB=./live-shows.sqlite
     python -m live_shows serve --port 8080
     python -m live_shows refresh [--dry-run]
     python -m live_shows schedule --at 06:30
+
+A database that cannot be opened stops the command with exit status 2, naming
+`LIVE_SHOWS_DB`.
 
 ## Development
 

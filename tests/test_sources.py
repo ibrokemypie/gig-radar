@@ -433,3 +433,28 @@ def test_a_lineup_page_applies_to_its_country_and_state_only() -> None:
     defaults = {page.match: page for page in lineups.known_pages()}
     assert (defaults["laneway"].country, defaults["laneway"].state) == ("AU", "VIC")
     assert (defaults["good things"].country, defaults["good things"].state) == ("AU", None)
+
+
+def test_ticketmaster_says_when_its_event_cap_cuts_the_window_short(web) -> None:
+    capped = json.dumps(
+        {"_embedded": {"events": [tm_listing("a", "2026-12-01")]}, "page": {"totalPages": 50}}
+    )
+    warnings: list[str] = []
+    ticketmaster.fetch(web({"ticketmaster": capped}), "K", PLACE, TODAY, UNTIL, warnings.append)
+    assert warnings == [
+        "Ticketmaster: stopped at the API's 1,000 events; nothing after 2026-12-01 was read"
+        " (a smaller HOME_RADIUS_KM reads further ahead)"
+    ]
+
+    empty = json.dumps({"page": {"totalPages": 50}})
+    warnings.clear()
+    with pytest.raises(SourceEmpty):
+        ticketmaster.fetch(web({"ticketmaster": empty}), "K", PLACE, TODAY, UNTIL, warnings.append)
+    assert "nothing after 2026-10-20" in warnings[0]
+
+    whole = json.dumps(
+        {"_embedded": {"events": [tm_listing("z", "2027-10-20")]}, "page": {"totalPages": 50}}
+    )
+    warnings.clear()
+    ticketmaster.fetch(web({"ticketmaster": whole}), "K", PLACE, TODAY, UNTIL, warnings.append)
+    assert warnings == []

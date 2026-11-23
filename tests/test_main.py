@@ -23,7 +23,7 @@ def test_bad_settings_exit_two_and_say_which(environment, monkeypatch, capsys) -
 
 
 def test_refresh_exits_one_when_anything_failed(environment, monkeypatch, capsys) -> None:
-    outcomes = [Outcome(failures=["Oztix: down"]), Outcome()]
+    outcomes = [Outcome(failures=["Oztix: down"], warnings=["Ticketmaster: capped"]), Outcome()]
     seen = []
 
     def fake_refresh(settings, services, store, dry_run):
@@ -32,7 +32,9 @@ def test_refresh_exits_one_when_anything_failed(environment, monkeypatch, capsys
 
     monkeypatch.setattr(main_module, "refresh", fake_refresh)
     assert main_module.main(["refresh"]) == 1
-    assert "FAILED Oztix: down" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "FAILED Oztix: down" in err
+    assert "WARNING Ticketmaster: capped" in err
     assert main_module.main(["refresh"]) == 0
     assert seen[0][2] == MELBOURNE
 

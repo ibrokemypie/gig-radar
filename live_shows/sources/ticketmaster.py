@@ -4,7 +4,9 @@ It needs a free API key of your own, typed on the settings page; with none it is
 is the one source that says when tickets go on sale, which the on-sale reminder needs.
 """
 
+import logging
 import urllib.parse
+from collections.abc import Callable
 from datetime import date, datetime
 
 from live_shows.http import Fetcher, json_of
@@ -13,6 +15,7 @@ from live_shows.settings import Place
 from live_shows.sources import SourceEmpty, in_window, looks_like_festival
 
 NAME = "Ticketmaster"
+log = logging.getLogger(__name__)
 # The API's `latlong` filter "is deprecated and maybe removed in a future release, please use
 # geoPoint instead"; geoPoint takes a geohash, and 9 characters place home within metres.
 GEOHASH_PRECISION = 9
@@ -24,9 +27,18 @@ MAX_PAGES = 1000 // PAGE_SIZE
 
 
 def fetch(
-    fetcher: Fetcher, api_key: str, place: Place, first_day: date, last_day: date
+    fetcher: Fetcher,
+    api_key: str,
+    place: Place,
+    first_day: date,
+    last_day: date,
+    warn: Callable[[str], None] = log.warning,
 ) -> list[Event]:
-    """Every music event within the radius of home in the window, page by page."""
+    """Every music event within the radius of home in the window, page by page.
+
+    The API serves at most 1,000 events a search. When home has more before the window
+    ends, the later ones are missed, and `warn` is told up to which day it read.
+    """
     events: list[Event] = []
     for page in range(MAX_PAGES):
         query = urllib.parse.urlencode(
@@ -53,6 +65,13 @@ def fetch(
         ]
         if page + 1 >= (answer.get("page") or {}).get("totalPages", 0):
             break
+    else:
+        last_read = max((e.starts_at.astimezone(place.zone).date() for e in events), default=None)
+        if last_read is None or last_read < last_day:
+            warn(
+                f"{NAME}: stopped at the API's {MAX_PAGES * PAGE_SIZE:,} events; nothing after"
+                f" {last_read or first_day} was read (a smaller HOME_RADIUS_KM reads further ahead)"
+            )
     if not events:
         raise SourceEmpty(f"{NAME}: no music events near home")
     return events

@@ -56,6 +56,7 @@ class Outcome:
     """What a run did, for its record and the settings page."""
 
     failures: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     counts: dict[str, int] = field(default_factory=dict)
     sent: list[str] = field(default_factory=list)
 
@@ -123,7 +124,9 @@ def gather_events(
         readers.append(
             (
                 ticketmaster.NAME,
-                lambda: ticketmaster.fetch(services.fetcher, key, place, first_day, last_day),
+                lambda: ticketmaster.fetch(
+                    services.fetcher, key, place, first_day, last_day, outcome.warnings.append
+                ),
             )
         )
     events = []

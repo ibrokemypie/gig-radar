@@ -33,6 +33,8 @@ def run_refresh(settings: Settings, dry_run: bool) -> int:
     outcome = refresh(settings, services, Store(database), dry_run=dry_run)
     for failure in outcome.failures:
         print(f"FAILED {failure}", file=sys.stderr)
+    for warning in outcome.warnings:
+        print(f"WARNING {warning}", file=sys.stderr)
     print(outcome.counts, outcome.sent)
     return 1 if outcome.failures else 0
 

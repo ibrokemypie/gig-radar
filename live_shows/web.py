@@ -139,6 +139,7 @@ def _run_status(last_run: dict[str, Any] | None, notes: list[str], zone: tzinfo)
             f"Couldn't read {html.escape(failure)}"
             for failure in last_run["summary"].get("failures", [])
         ]
+        lines += [html.escape(warning) for warning in last_run["summary"].get("warnings", [])]
     lines += [html.escape(note) for note in notes]
     return '<div class="status">' + "".join(f"<div>{line}</div>" for line in lines) + "</div>"
 

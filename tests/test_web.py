@@ -533,3 +533,9 @@ def test_only_web_links_reach_the_page() -> None:
     songs = {"apple": None, "kind": "songs", "items": [
         {"name": "S", "art": "javascript:x()", "preview": "data:audio/x", "url": "vbscript:y"}]}  # fmt: skip
     assert not any(bad in web._previews(songs) for bad in ("javascript", "data:", "vbscript"))
+
+
+def test_a_runs_warnings_show_under_the_status() -> None:
+    run = {"started_at": "2026-10-19T07:00:00+11:00", "finished_at": None,
+           "summary": {"warnings": ["Ticketmaster: stopped <early>"]}}  # fmt: skip
+    assert "Ticketmaster: stopped &lt;early&gt;" in web.page([], NONE_SAVED, run, TODAY)

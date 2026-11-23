@@ -443,3 +443,14 @@ def test_a_failing_email_is_reported_not_raised(config: Settings) -> None:
     assert outcome.failures == ["email: relay refused"]
     assert outcome.counts["written"] == 1
     assert store.last_run()["ok"] == 0
+
+
+def test_ticketmasters_cap_is_a_warning_on_the_run(config: Settings) -> None:
+    store = Store(config.database)
+    store.set_secret("ticketmaster_key", "KEY")
+    listing = {"id": "a", "name": "x", "dates": {"start": {"localDate": "2026-12-01"}}}
+    capped = json.dumps({"_embedded": {"events": [listing]}, "page": {"totalPages": 9}})
+    outcome = refresh(config, services(FakeWeb({**plex_library(), **sources(),
+                                                "app.ticketmaster.com": capped})), store)  # fmt: skip
+    assert outcome.warnings[0].startswith("Ticketmaster: stopped at the API's 1,000 events")
+    assert store.last_run()["summary"]["warnings"] == outcome.warnings

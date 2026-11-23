@@ -12,7 +12,6 @@ keeps a session cookie. Every POST must come from the page itself: its Origin, o
 Referer when a browser sends no Origin, must name this server.
 """
 
-import hashlib
 import hmac
 import html
 import logging
@@ -31,7 +30,10 @@ from live_shows.store import SECRETS, Store
 log = logging.getLogger(__name__)
 
 SESSION_COOKIE = "live_shows_session"
-SESSION_DAYS = 365
+SESSION_DAYS = 30
+MAX_BODY_BYTES = 1024 * 1024
+# The health check is reached from inside the container, by these names only.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 SECRET_LABELS = {
     "mail_password": (
         "Mail password",
@@ -185,11 +187,6 @@ def login_page(wrong: bool = False) -> str:
         ' placeholder="Password" autocomplete="current-password">'
         '<button class="btn primary">Sign in</button></form>'
     )
-
-
-def session_token(password: str) -> str:
-    """The session cookie's value: a keyed hash of the password, so changing it signs out."""
-    return hmac.new(password.encode(), b"live-shows session", hashlib.sha256).hexdigest()
 
 
 def _settings(secrets: dict[str, bool], replacing: str | None) -> str:
@@ -607,6 +604,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         """The page, or the health check, or the login form."""
         url = urllib.parse.urlparse(self.path)
+        if url.path == "/healthz" and self._host_name() in LOCAL_HOSTS:
+            self._reply(HTTPStatus.OK, "ok", "text/plain")
+            return
+        if not self._known_host():
+            return
         if url.path == "/healthz":
             self._reply(HTTPStatus.OK, "ok", "text/plain")
             return
@@ -635,11 +637,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         """Sign in, Got tickets, Not going, sampling, and saving or clearing a secret."""
         url = urllib.parse.urlparse(self.path)
-        length = int(self.headers.get("Content-Length") or 0)
-        form = {
-            key: values[0]
-            for key, values in urllib.parse.parse_qs(self.rfile.read(length).decode()).items()
-        }
+        if not self._known_host():
+            return
+        form = self._form()
+        if form is None:
+            return
         if not self._same_origin():
             self._reply(HTTPStatus.FORBIDDEN, "Forms are taken only from this page", "text/plain")
             return
@@ -660,24 +662,47 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._reply(HTTPStatus.NOT_FOUND, "Not found", "text/plain")
 
-    def _same_origin(self) -> bool:
-        """Whether the form came from this server: Origin, else Referer, names its host.
+    def _host_name(self) -> str:
+        """The request's Host header without its port."""
+        return urllib.parse.urlsplit(f"//{self.headers.get('Host') or ''}").hostname or ""
 
-        The host may be the one the request was sent to or the one LIVE_SHOWS_URL names,
-        which differ behind a proxy that rewrites Host.
+    def _known_host(self) -> bool:
+        """Whether the Host header is LIVE_SHOWS_URL's or an allowed one; refuses it if not.
+
+        A page reached by any other name could be a DNS rebinding attack.
         """
+        if (self.headers.get("Host") or "").lower() in self.settings.hosts:
+            return True
+        self._reply(HTTPStatus.MISDIRECTED_REQUEST, "Unknown host", "text/plain")
+        return False
+
+    def _form(self) -> dict[str, str] | None:
+        """The posted form, or None once a bad or oversized body was refused."""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = -1
+        if length < 0:
+            self._reply(HTTPStatus.BAD_REQUEST, "Bad Content-Length", "text/plain")
+            return None
+        if length > MAX_BODY_BYTES:
+            self._reply(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "Too large", "text/plain")
+            return None
+        body = self.rfile.read(length).decode(errors="replace")
+        return {key: values[0] for key, values in urllib.parse.parse_qs(body).items()}
+
+    def _same_origin(self) -> bool:
+        """Whether the form came from this page: its Origin, else Referer, is a known host."""
         source = self.headers.get("Origin") or self.headers.get("Referer") or ""
-        host = urllib.parse.urlparse(source).netloc
-        allowed = {self.headers.get("Host"), urllib.parse.urlparse(self.settings.app_url).netloc}
-        return bool(host) and host in allowed
+        return urllib.parse.urlsplit(source).netloc.lower() in self.settings.hosts
 
     def _signed_in(self) -> bool:
-        """Whether no password is set, or the session cookie matches it."""
+        """Whether no password is set, or the session cookie is a live session under it."""
         password = self.settings.password
         if not password:
             return True
         cookie = SimpleCookie(self.headers.get("Cookie") or "").get(SESSION_COOKIE)
-        return cookie is not None and hmac.compare_digest(cookie.value, session_token(password))
+        return cookie is not None and self.store.has_session(cookie.value, password)
 
     def _login(self, form: dict[str, str]) -> None:
         """Check the password and set the session cookie, or show the form again."""
@@ -692,7 +717,8 @@ class Handler(BaseHTTPRequestHandler):
         secure = "; Secure" if self.settings.app_url.startswith("https:") else ""
         self._redirect(
             "./",
-            f"{SESSION_COOKIE}={session_token(password)}; Path=/; HttpOnly; SameSite=Lax"
+            f"{SESSION_COOKIE}={self.store.start_session(password, SESSION_DAYS)}; Path=/"
+            "; HttpOnly; SameSite=Lax"
             f"; Max-Age={SESSION_DAYS * 86400}{secure}",
         )
 

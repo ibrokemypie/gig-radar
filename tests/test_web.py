@@ -1,6 +1,6 @@
 import http.client
 import threading
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from conftest import MELBOURNE, artist, at, settings, show
@@ -46,13 +46,18 @@ def server(store, monkeypatch):
 def request(
     server, method: str, path: str, form: str = "", headers: dict[str, str] | None = None
 ) -> http.client.HTTPResponse:
-    """A request to the server; a POST comes from the page unless `headers` say otherwise."""
-    host = f"127.0.0.1:{server.server_address[1]}"
+    """A request to the page's own host; a POST comes from the page unless `headers` say not."""
     connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1])
-    sent = {}
+    sent = {"Host": "shows.example"}
     if method == "POST":
-        sent = {"Content-Type": "application/x-www-form-urlencoded", "Origin": f"http://{host}"}
-    connection.request(method, path, body=form or None, headers={**sent, **(headers or {})})
+        sent |= {"Content-Type": "application/x-www-form-urlencoded",
+                 "Origin": "https://shows.example"}  # fmt: skip
+    connection.putrequest(method, path, skip_host=True)
+    body = form.encode()
+    for name, value in {**sent, "Content-Length": str(len(body)), **(headers or {})}.items():
+        if value is not None:
+            connection.putheader(name, value)
+    connection.endheaders(body if method == "POST" else None)
     return connection.getresponse()
 
 
@@ -441,7 +446,8 @@ def test_the_cookie_is_not_secure_on_a_plain_http_page(store) -> None:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        response = request(server, "POST", "/login", "password=pw")
+        lan = {"Host": "shows.lan", "Origin": "http://shows.lan"}
+        response = request(server, "POST", "/login", "password=pw", lan)
         assert "Secure" not in response.getheader("Set-Cookie")
     finally:
         server.shutdown()
@@ -451,3 +457,59 @@ def test_today_is_local() -> None:
     handler = web.Handler.__new__(web.Handler)
     handler.settings = SETTINGS
     assert handler.today() == web.datetime.now(MELBOURNE).date()
+
+
+def test_a_request_for_any_other_host_is_refused(server, store) -> None:
+    form = "show_id=2026-10-20~la-dispute&action=got"
+    rebound = {"Host": "attacker.example", "Origin": "http://attacker.example"}
+    assert request(server, "POST", "/tickets", form, rebound).status == 421
+    assert request(server, "GET", "/", headers={"Host": "attacker.example"}).status == 421
+    assert request(server, "GET", "/", headers={"Host": None}).status == 421
+    assert not store.shows()[0]["bought"]
+    assert request(server, "GET", "/healthz", headers={"Host": "attacker.example"}).status == 421
+
+
+def test_the_health_check_answers_on_local_names_and_the_page_host(server) -> None:
+    for host in ("localhost:8080", "127.0.0.1:8080", "[::1]:8080", "shows.example"):
+        assert request(server, "GET", "/healthz", headers={"Host": host}).read() == b"ok"
+    assert request(server, "GET", "/", headers={"Host": "localhost:8080"}).status == 421
+
+
+def test_allowed_hosts_are_answered_too(store) -> None:
+    server = web.make_server(
+        store, settings(LIVE_SHOWS_ALLOWED_HOSTS="Gigs.lan:8080, 10.0.0.5:8080"), 0, "127.0.0.1"
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        lan = {"Host": "gigs.lan:8080", "Origin": "http://gigs.lan:8080"}
+        assert request(server, "GET", "/", headers=lan).status == 200
+        form = "show_id=2026-10-20~la-dispute&action=got"
+        assert request(server, "POST", "/tickets", form, lan).status == 303
+    finally:
+        server.shutdown()
+
+
+def test_bad_or_oversized_bodies_are_refused(server, store) -> None:
+    for length, status in [("abc", 400), ("-5", 400), (str(web.MAX_BODY_BYTES + 1), 413)]:
+        response = request(server, "POST", "/tickets", "", {"Content-Length": length})
+        assert response.status == status
+    assert not store.shows()[0]["bought"]
+
+
+def test_sessions_expire_and_end_when_the_password_changes(store, monkeypatch) -> None:
+    from live_shows import store as store_module
+
+    token = store.start_session("one", 30)
+    assert store.has_session(token, "one")
+    assert not store.has_session(token, "two")
+    assert not store.has_session("guessed", "one")
+    later = store_module.now() + timedelta(days=31)
+    monkeypatch.setattr(store_module, "now", lambda: later)
+    assert not store.has_session(token, "one")
+    assert store.db.execute("select count(*) from sessions").fetchone()[0] == 0
+
+
+def test_the_session_cookie_lasts_thirty_days(locked) -> None:
+    response = request(locked, "POST", "/login", "password=opensesame")
+    assert f"Max-Age={30 * 86400}" in response.getheader("Set-Cookie")

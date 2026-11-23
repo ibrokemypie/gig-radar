@@ -9,8 +9,11 @@ services:
     # from this checkout.
     image: ghcr.io/ibrokemypie/gig-radar:latest
     env_file: .env
+    # Published on this machine only. To reach it from other devices, set
+    # LIVE_SHOWS_PASSWORD first, then change this to "8080:8080" (or put a
+    # reverse proxy in front) and set LIVE_SHOWS_URL to the address you use.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - data:/data
     restart: unless-stopped

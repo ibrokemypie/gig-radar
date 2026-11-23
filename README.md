@@ -70,6 +70,7 @@ that state.
 |---|---|
 | `LIVE_SHOWS_URL` | The address you open the page at. Emails and calendar events link to it. |
 | `LIVE_SHOWS_PASSWORD` | A password for the page. Unset, there is no login. |
+| `LIVE_SHOWS_ALLOWED_HOSTS` | Other `host:port` names the page answers to, comma-separated. |
 | `LIVE_SHOWS_DB` | The database file. Default `/data/live-shows.sqlite`. |
 
 ### Listening
@@ -149,12 +150,20 @@ provider's help pages. If your server has no default calendar to find, set
 ## The login
 
 Set `LIVE_SHOWS_PASSWORD` to ask for a password before the page. A correct
-password sets a session cookie for a year; changing the password signs
+password starts a session that lasts 30 days; changing the password signs
 everyone out. The page also refuses any form not sent from the page itself.
 
-The login is one shared password with no rate limit. Keep the page on your own
-network, or put it behind a reverse proxy with TLS, and set `LIVE_SHOWS_URL`
-to the address you use.
+The page answers only requests addressed to the host and port in
+`LIVE_SHOWS_URL`, or one listed in `LIVE_SHOWS_ALLOWED_HOSTS`. Anything else
+gets 421, which stops DNS rebinding. If you open the page at
+`http://127.0.0.1:8080` instead of `http://localhost:8080`, add
+`127.0.0.1:8080` to the allowed hosts.
+
+The compose example publishes the page on this machine only. **Set
+`LIVE_SHOWS_PASSWORD` before you expose it beyond this machine.** The login is
+one shared password with no rate limit, so keep the page on your own network,
+or put it behind a reverse proxy with TLS, and set `LIVE_SHOWS_URL` to the
+address you use.
 
 ## Scheduling
 

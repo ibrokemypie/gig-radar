@@ -117,6 +117,12 @@ class Settings:
     caldav: CalDav | None
     festivals: Path | None
     password: str | None
+    allowed_hosts: tuple[str, ...] = ()
+
+    @property
+    def hosts(self) -> set[str]:
+        """The Host headers the page answers to: LIVE_SHOWS_URL's, then any others allowed."""
+        return {urllib.parse.urlsplit(self.app_url).netloc.lower(), *self.allowed_hosts}
 
 
 def from_environment(env: Mapping[str, str]) -> Settings:
@@ -187,6 +193,11 @@ def from_environment(env: Mapping[str, str]) -> Settings:
         caldav=caldav,
         festivals=_path(get("FESTIVALS_FILE")),
         password=get("LIVE_SHOWS_PASSWORD"),
+        allowed_hosts=tuple(
+            host.strip().lower()
+            for host in (get("LIVE_SHOWS_ALLOWED_HOSTS") or "").split(",")
+            if host.strip()
+        ),
     )
 
 

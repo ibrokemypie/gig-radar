@@ -1,0 +1,15 @@
+[
+  {
+    "festival": "Good Things Festival",
+    "match": "good things",
+    "url": "https://goodthingsfestival.com.au/lineup",
+    "country": "AU"
+  },
+  {
+    "festival": "Laneway Festival",
+    "match": "laneway",
+    "url": "https://lanewayfestival.com/melbourne/lineup",
+    "country": "AU",
+    "state": "VIC"
+  }
+]

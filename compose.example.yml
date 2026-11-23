@@ -1,0 +1,32 @@
+# Copy to compose.yml, copy .env.example to .env and fill it in, then:
+#   docker compose up -d
+# Open http://localhost:8080 and type your keys and passwords under Settings.
+
+services:
+  # The page.
+  web:
+    # The published image; or use `build: .` instead of `image:` to build it
+    # from this checkout.
+    image: ghcr.io/ibrokemypie/gig-radar:latest
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - data:/data
+    restart: unless-stopped
+
+  # The daily refresh: the same image, sleeping until the time given, in
+  # HOME_TIMEZONE, then finding shows, filling calendars and sending email.
+  refresh:
+    image: ghcr.io/ibrokemypie/gig-radar:latest
+    command: ["schedule", "--at", "06:30"]
+    env_file: .env
+    volumes:
+      - data:/data
+    restart: unless-stopped
+    # It serves no page, so the image's page check does not apply.
+    healthcheck:
+      disable: true
+
+volumes:
+  data:

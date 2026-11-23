@@ -1,0 +1,15 @@
+{
+  "resultCount": 1,
+  "results": [
+    {
+      "wrapperType": "artist",
+      "artistType": "Artist",
+      "artistName": "Carpenter Brut",
+      "artistLinkUrl": "https://music.apple.com/au/artist/carpenter-brut/593656958?uo=4",
+      "artistId": 593656958,
+      "amgArtistId": 2977131,
+      "primaryGenreName": "Electronic",
+      "primaryGenreId": 7
+    }
+  ]
+}

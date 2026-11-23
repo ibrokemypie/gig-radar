@@ -1,0 +1,395 @@
+{
+  "hits": [
+    {
+      "EventId": 242366,
+      "EventGuid": "aa7a6a48-7ff5-4fb5-b875-7518fa85aa11",
+      "EventName": "MUDHONEY (USA) AUSTRALIAN TOUR 2026",
+      "MinPrice": 0.0,
+      "EventImage1": "https://assets.oztix.com.au/image/de526790-ea43-4c6d-86ea-66c920eb2682.png?width=600&height=300",
+      "HomepageImage": "https://assets.oztix.com.au/image/de526790-ea43-4c6d-86ea-66c920eb2682.png?width=360&height=180",
+      "SpecialGuests": "With Laura & The Hell Cutz",
+      "DateStart": "2026-10-20T07:30:00",
+      "DateStartUnix": 1792481400,
+      "DateEnd": null,
+      "DateEndUnix": 0,
+      "EventUrl": "https://tickets.oztix.com.au/outlet/event/aa7a6a48-7ff5-4fb5-b875-7518fa85aa11?utm_source=Oztix&utm_medium=Website",
+      "ShortEventUrl": "https://oztix.link/wd2nkn7",
+      "Categories": [
+        "Music",
+        "Rock",
+        "Punk"
+      ],
+      "_geoloc": {
+        "lat": -37.56058883667,
+        "lng": 143.859375
+      },
+      "Venue": {
+        "Id": 6558,
+        "ExternalReference": "b2bce5aa-a6d1-4c62-ba45-7a2cf40b324f",
+        "Name": "Volta",
+        "Address": "15 Field Street",
+        "Locality": "Ballarat Central",
+        "State": "VIC",
+        "Postcode": "3350",
+        "PhoneNumber": "0419 379 757",
+        "WebsiteUrl": "",
+        "Timezone": "Australia/Melbourne",
+        "Country": "AU",
+        "SearchKeywords": []
+      },
+      "EventSearchKeywords": [],
+      "Bands": [
+        "Mudhoney"
+      ],
+      "Performances": [
+        {
+          "Id": "d1060100-2030-4453-8929-388f3220cf82",
+          "Name": "Mudhoney"
+        }
+      ],
+      "TourName": null,
+      "FullCategories": [
+        "/category/music/",
+        "/category/rock-music-/",
+        "/category/punk-music-/"
+      ],
+      "DateStartMonth": 10,
+      "DateStartWeek": 43,
+      "DateStartMonthName": "October",
+      "IsApproved": true,
+      "IsCancelled": false,
+      "IsPostponed": false,
+      "IsRescheduled": false,
+      "Affected": false,
+      "AffectedBy": null,
+      "PriceFrom": null,
+      "AvailabilityDate": null,
+      "ExpirationDate": "2026-10-20T18:30:00+11:00",
+      "Availability": null,
+      "HasEventDatePassed": false,
+      "Brand": 0,
+      "OutletId": 109,
+      "OutletFriendlyName": "Oztix Home Page",
+      "CollectionIds": [],
+      "LastModifiedUtc": "2026-10-20T00:52:57.5270084Z",
+      "objectID": "event-242366"
+    },
+    {
+      "EventId": 232032,
+      "EventGuid": "3375480f-6035-412b-931c-c68ca544f73d",
+      "EventName": "Paradise Lost",
+      "MinPrice": 0.0,
+      "EventImage1": "https://assets.oztix.com.au/image/3fcd272c-4091-4a82-a457-cc17ede35285.png?width=600&height=300",
+      "HomepageImage": "https://assets.oztix.com.au/image/ce6e3319-0d36-46b8-b7a6-a247cd542a79.png?width=360",
+      "SpecialGuests": "with Victoria K",
+      "DateStart": "2026-10-20T08:00:00",
+      "DateStartUnix": 1792483200,
+      "DateEnd": null,
+      "DateEndUnix": 0,
+      "EventUrl": "https://tickets.oztix.com.au/outlet/event/3375480f-6035-412b-931c-c68ca544f73d?utm_source=Oztix&utm_medium=Website",
+      "ShortEventUrl": "https://oztix.link/o42ewnk",
+      "Categories": [
+        "Music",
+        "Metal / Hard Rock"
+      ],
+      "_geoloc": {
+        "lat": -37.814670562744,
+        "lng": 144.96600341797
+      },
+      "Venue": {
+        "Id": 4015,
+        "ExternalReference": "f4e01184-487e-4d8b-9170-5b44f0148a58",
+        "Name": "Max Watt's Melbourne",
+        "Address": "125 Swanston St",
+        "Locality": "Melbourne",
+        "State": "VIC",
+        "Postcode": "3000",
+        "PhoneNumber": "",
+        "WebsiteUrl": "http://maxwatts.com.au/",
+        "Timezone": "Australia/Melbourne",
+        "Country": "AU",
+        "SearchKeywords": [
+          "Hi Fi Bar Melbourne",
+          "Hi Fi Melbourne",
+          "HiFi Bar Melbourne",
+          "Hi-Fi Bar Melbourne",
+          "HiFi Melbourne",
+          "Hi-Fi Melbourne",
+          "Max Watts Melbourne"
+        ]
+      },
+      "EventSearchKeywords": [],
+      "Bands": [
+        "Paradise Lost"
+      ],
+      "Performances": [
+        {
+          "Id": "59269927-4555-488b-8a4e-e0b85f9ed0d9",
+          "Name": "Paradise Lost"
+        }
+      ],
+      "TourName": null,
+      "FullCategories": [
+        "/category/music/",
+        "/category/metal-hard-rock-music-/"
+      ],
+      "DateStartMonth": 10,
+      "DateStartWeek": 43,
+      "DateStartMonthName": "October",
+      "IsApproved": true,
+      "IsCancelled": false,
+      "IsPostponed": false,
+      "IsRescheduled": false,
+      "Affected": false,
+      "AffectedBy": null,
+      "PriceFrom": 89.90,
+      "AvailabilityDate": "2026-02-05T11:00:00+11:00",
+      "ExpirationDate": "2026-10-20T19:00:00+11:00",
+      "Availability": true,
+      "HasEventDatePassed": false,
+      "Brand": 0,
+      "OutletId": 109,
+      "OutletFriendlyName": "Oztix Home Page",
+      "CollectionIds": [],
+      "LastModifiedUtc": "2026-10-18T04:39:06.0505505Z",
+      "objectID": "event-232032"
+    },
+    {
+      "EventId": 249037,
+      "EventGuid": "d4acf167-a039-43cc-a379-304f32b512ac",
+      "EventName": "Riverboats Music Festival 2027",
+      "MinPrice": 0.0,
+      "EventImage1": "https://assets.oztix.com.au/image/d7b16aa4-829f-4b10-bea5-3086a91535fc.png?width=600&height=300",
+      "HomepageImage": "https://assets.oztix.com.au/image/d7b16aa4-829f-4b10-bea5-3086a91535fc.png?width=360&height=180",
+      "SpecialGuests": "with The Cat Empire, The Waifs, Spiderbait, The Herd, Troy Cassar-Daley, Floodlights & more",
+      "DateStart": "2027-02-19T06:30:00",
+      "DateStartUnix": 1803018600,
+      "DateEnd": "2027-02-21T11:00:00",
+      "DateEndUnix": 1803207600,
+      "EventUrl": "https://tickets.oztix.com.au/outlet/event/d4acf167-a039-43cc-a379-304f32b512ac?utm_source=Oztix&utm_medium=Website",
+      "ShortEventUrl": "https://oztix.link/3lzqljw",
+      "Categories": [
+        "Music",
+        "Festivals",
+        "Australian Artists"
+      ],
+      "_geoloc": {
+        "lat": -36.1248664855957,
+        "lng": 144.7459716796875
+      },
+      "Venue": {
+        "Id": 6861,
+        "ExternalReference": "94e251a7-776a-4938-9f43-7d6bc1743125",
+        "Name": "Aquatic Reserve",
+        "Address": "Heygarth Street",
+        "Locality": "Echuca",
+        "State": "VIC",
+        "Postcode": "3564",
+        "PhoneNumber": "",
+        "WebsiteUrl": "",
+        "Timezone": "Australia/Melbourne",
+        "Country": "AU",
+        "SearchKeywords": []
+      },
+      "EventSearchKeywords": [],
+      "Bands": [
+        "Spiderbait",
+        "THE CAT EMPIRE",
+        "The Herd",
+        "The Waifs",
+        "Henry Wagons",
+        "Claire Anne Taylor",
+        "Ella Thompson",
+        "Fanny Lumsden",
+        "Nadia Reid",
+        "Pierce Brothers",
+        "Riverboats Music Festival",
+        "Troy Cassar-Daley",
+        "Floodlights",
+        "Kaitlin Keegan",
+        "Milly Strange",
+        "Mulga Bore Hard Rock",
+        "The Gnomes"
+      ],
+      "Performances": [
+        {
+          "Id": "8750061e-8e45-4abd-a689-ecbdd7eee3cd",
+          "Name": "Spiderbait"
+        },
+        {
+          "Id": "cde9cdda-951f-48a9-a1ee-88ef74197770",
+          "Name": "THE CAT EMPIRE"
+        },
+        {
+          "Id": "4988c6a2-7edf-416d-95b5-54fb27d1a233",
+          "Name": "The Herd"
+        },
+        {
+          "Id": "e726d578-9c97-45e1-b75a-a81fd180e38c",
+          "Name": "The Waifs"
+        },
+        {
+          "Id": "f94b100d-ffae-4a06-9626-b0d986993835",
+          "Name": "Henry Wagons"
+        },
+        {
+          "Id": "5e52a57e-7657-4d0f-bebc-6ca9ffedf620",
+          "Name": "Claire Anne Taylor"
+        },
+        {
+          "Id": "3a605c3b-4367-478d-a109-8baf841fbf09",
+          "Name": "Ella Thompson"
+        },
+        {
+          "Id": "75c54605-1e6b-4e3b-b98c-9c5978df6674",
+          "Name": "Fanny Lumsden"
+        },
+        {
+          "Id": "47219418-f483-4865-9c70-1609fad61aff",
+          "Name": "Nadia Reid"
+        },
+        {
+          "Id": "5eb2b00d-28ae-445b-a2f7-c1aaf19cfe2c",
+          "Name": "Pierce Brothers"
+        },
+        {
+          "Id": "2028420f-6b3c-44c7-b804-c8e4f507ff67",
+          "Name": "Riverboats Music Festival"
+        },
+        {
+          "Id": "2ba1c060-c308-47bb-8984-bddc5dd351b9",
+          "Name": "Troy Cassar-Daley"
+        },
+        {
+          "Id": "888b9982-d302-4db5-8ddf-2e261fd906c8",
+          "Name": "Floodlights"
+        },
+        {
+          "Id": "95e142ef-6849-4be3-bc3b-5cc4535e4168",
+          "Name": "Kaitlin Keegan"
+        },
+        {
+          "Id": "10088161-8753-46ea-914a-dcdb5699c29b",
+          "Name": "Milly Strange"
+        },
+        {
+          "Id": "fe988aa7-c6c9-45a6-aea9-d430e833ff4d",
+          "Name": "Mulga Bore Hard Rock"
+        },
+        {
+          "Id": "91a2077e-fa68-409e-9eb6-a383fe4bf7be",
+          "Name": "The Gnomes"
+        }
+      ],
+      "TourName": null,
+      "FullCategories": [
+        "/category/music/",
+        "/category/festivals/",
+        "/category/australian-artists-music-/"
+      ],
+      "DateStartMonth": 2,
+      "DateStartWeek": 8,
+      "DateStartMonthName": "February",
+      "IsApproved": true,
+      "IsCancelled": false,
+      "IsPostponed": false,
+      "IsRescheduled": false,
+      "Affected": false,
+      "AffectedBy": null,
+      "PriceFrom": 0.0,
+      "AvailabilityDate": "2026-10-08T09:00:00+11:00",
+      "ExpirationDate": "2027-02-21T22:00:00+11:00",
+      "Availability": true,
+      "HasEventDatePassed": false,
+      "Brand": 0,
+      "OutletId": 109,
+      "OutletFriendlyName": "Oztix Home Page",
+      "CollectionIds": [],
+      "LastModifiedUtc": "2026-10-08T23:02:07.8478499Z",
+      "objectID": "event-249037"
+    },
+    {
+      "EventId": 236030,
+      "EventGuid": "4d42ffd4-8e22-4c56-9236-62f5ea0e5387",
+      "EventName": "CANCELLED - Gold Chisel vs The Power & The Passion Midnight Oils Tribute.",
+      "MinPrice": 0.0,
+      "EventImage1": "https://assets.oztix.com.au/image/61e74069-7b91-46fd-a41a-21a2d6539802.png?width=600&height=300",
+      "HomepageImage": "https://assets.oztix.com.au/image/61e74069-7b91-46fd-a41a-21a2d6539802.png?width=360&height=180",
+      "SpecialGuests": "",
+      "DateStart": "2026-10-23T13:00:00",
+      "DateStartUnix": 1792760400,
+      "DateEnd": null,
+      "DateEndUnix": 0,
+      "EventUrl": "https://tickets.oztix.com.au/outlet/event/4d42ffd4-8e22-4c56-9236-62f5ea0e5387?utm_source=Oztix&utm_medium=Website",
+      "ShortEventUrl": "https://oztix.link/l4jy9m4",
+      "Categories": [
+        "Music",
+        "Rock",
+        "Metal / Hard Rock",
+        "Australian Artists",
+        "Beer",
+        "Celebrity / Artist"
+      ],
+      "_geoloc": {
+        "lat": -36.70644378662109,
+        "lng": 144.2198638916016
+      },
+      "Venue": {
+        "Id": 8894,
+        "ExternalReference": "7b2463d3-d3a0-4f8f-8027-956bb5442780",
+        "Name": "Bottlemart Express - Allies Hotel",
+        "Address": "181 Loddon Valley Hwy",
+        "Locality": "Myers Flat",
+        "State": "VIC",
+        "Postcode": "3556",
+        "PhoneNumber": "",
+        "WebsiteUrl": "",
+        "Timezone": "Australia/Melbourne",
+        "Country": "AU",
+        "SearchKeywords": []
+      },
+      "EventSearchKeywords": [],
+      "Bands": [
+        "Gold Chisel"
+      ],
+      "Performances": [
+        {
+          "Id": "f48d01af-8337-4a42-aa6d-4762624e125f",
+          "Name": "Gold Chisel"
+        }
+      ],
+      "TourName": null,
+      "FullCategories": [
+        "/category/music/",
+        "/category/rock-music-/",
+        "/category/metal-hard-rock-music-/",
+        "/category/australian-artists-music-/",
+        "/category/beer-food-and-wine-/",
+        "/category/celebrity-artist/"
+      ],
+      "DateStartMonth": 10,
+      "DateStartWeek": 43,
+      "DateStartMonthName": "October",
+      "IsApproved": true,
+      "IsCancelled": true,
+      "IsPostponed": false,
+      "IsRescheduled": false,
+      "Affected": true,
+      "AffectedBy": "Cancelled",
+      "PriceFrom": 34.70,
+      "AvailabilityDate": "2026-03-12T09:48:48.4009079+11:00",
+      "ExpirationDate": "2026-10-24T00:00:00+11:00",
+      "Availability": false,
+      "HasEventDatePassed": false,
+      "Brand": 0,
+      "OutletId": 109,
+      "OutletFriendlyName": "Oztix Home Page",
+      "CollectionIds": [],
+      "LastModifiedUtc": "2026-10-16T01:37:24.7154452Z",
+      "objectID": "event-236030"
+    }
+  ],
+  "nbHits": 4,
+  "page": 0,
+  "nbPages": 1
+}

@@ -4,8 +4,11 @@ No source says when a show was announced, so the first run that saw a (day, arti
 stands in for it. Secrets typed on the settings page are kept here and never shown again.
 """
 
+import hashlib
+import hmac
 import json
 import os
+import secrets
 import sqlite3
 import urllib.parse
 from collections.abc import Generator
@@ -31,6 +34,8 @@ SECRETS = (
 SERVICES = ("smtp", "imap", "caldav")
 # Names a secret was saved under before.
 _RENAMED = {"fastmail_app_password": "mail_password"}
+# Query parameters that carry credentials, left out of cache keys.
+_SECRET_PARAMS = ("X-Plex-Token",)
 CHOICES = ("kept", "trimmed")
 
 _SCHEMA = """
@@ -56,6 +61,8 @@ create table if not exists choices (
 create table if not exists samples (
     artist_key text primary key, fetched_at text not null, record text not null);
 create table if not exists unlearned (seed text primary key, at text not null);
+create table if not exists sessions (
+    token_hash text primary key, tag text not null, expires_at text not null);
 create table if not exists calendar (
     uid text not null, collection text not null, digest text not null,
     primary key (uid, collection));
@@ -77,6 +84,8 @@ class Store:
         self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(_SCHEMA)
+        # Cache rows once kept a URL's credentials in their key.
+        self.db.execute("delete from cache where url like ?", (f"%{_SECRET_PARAMS[0]}=%",))
         for old, new in _RENAMED.items():
             self.db.execute("update or ignore settings set name = ? where name = ?", (new, old))
 
@@ -119,6 +128,36 @@ class Store:
     def secret_status(self) -> dict[str, bool]:
         """Whether each secret is saved: all the settings page may know of them."""
         return {name: self.secret(name) is not None for name in SECRETS}
+
+    # --- Page sessions ----------------------------------------------------------------
+
+    def start_session(self, password: str, days: int) -> str:
+        """A new random session token, good for `days` and only while `password` stands."""
+        token = secrets.token_urlsafe(32)
+        expires = now() + timedelta(days=days)
+        self.db.execute(
+            "insert into sessions values (?, ?, ?)",
+            (_digest(token), self._password_tag(password), expires.isoformat()),
+        )
+        return token
+
+    def has_session(self, token: str, password: str) -> bool:
+        """Whether a token is a live session started under this password; drops expired ones."""
+        self.db.execute("delete from sessions where expires_at <= ?", (now().isoformat(),))
+        row = self.db.execute(
+            "select tag from sessions where token_hash = ?", (_digest(token),)
+        ).fetchone()
+        return row is not None and hmac.compare_digest(row["tag"], self._password_tag(password))
+
+    def _password_tag(self, password: str) -> str:
+        """The password keyed with this database's own random secret, made on first use."""
+        row = self.db.execute("select value from settings where name = 'session_key'").fetchone()
+        if row is None:
+            key = secrets.token_hex(32)
+            self.db.execute("insert into settings values ('session_key', ?)", (key,))
+        else:
+            key = row["value"]
+        return hmac.new(key.encode(), password.encode(), hashlib.sha256).hexdigest()
 
     # --- Shows: the current list and when each was first seen --------------------------
 
@@ -339,17 +378,37 @@ class CachedFetcher:
         self.max_age = max_age
 
     def text(self, url: str, headers: dict[str, str] | None = None) -> str:
-        """The cached body of `url`, fetched again once it is too old."""
+        """The cached body of `url`, fetched again once it is too old.
+
+        Rows are keyed by the URL without its credentials, so no token is stored.
+        """
+        key = cache_key(url)
         row = self.store.db.execute(
-            "select fetched_at, body from cache where url = ?", (url,)
+            "select fetched_at, body from cache where url = ?", (key,)
         ).fetchone()
         if row and now() - datetime.fromisoformat(row["fetched_at"]) < self.max_age:
             return row["body"]
         body = self.fetcher.text(url, headers)
         self.store.db.execute(
-            "insert or replace into cache values (?, ?, ?)", (url, now().isoformat(), body)
+            "insert or replace into cache values (?, ?, ?)", (key, now().isoformat(), body)
         )
         return body
+
+
+def cache_key(url: str) -> str:
+    """A URL without the query parameters that carry credentials."""
+    parts = urllib.parse.urlsplit(url)
+    query = [
+        (name, value)
+        for name, value in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+        if name not in _SECRET_PARAMS
+    ]
+    return urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(query)))
+
+
+def _digest(token: str) -> str:
+    """How a session token is kept: hashed, so the database alone signs nobody in."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def show_record(show: Show) -> dict[str, Any]:

@@ -237,3 +237,21 @@ def test_a_festival_with_a_pinned_act_is_pinned() -> None:
     assert record["pinned"] is True
     assert [act["pinned"] for act in record["acts"]] == [False, True]
     assert show_record(show())["pinned"] is False
+
+
+def test_cache_keys_leave_out_the_plex_token(store: Store) -> None:
+    web = FakeWeb({"children": "[1]"})
+    cached = CachedFetcher(web, store, timedelta(days=1))
+    assert cached.text("http://plex/library/metadata/1/children?X-Plex-Token=SECRET&a=1") == "[1]"
+    assert cached.text("http://plex/library/metadata/1/children?a=1&X-Plex-Token=OTHER") == "[1]"
+    assert len(web.requests) == 1
+    keys = [row["url"] for row in store.db.execute("select url from cache")]
+    assert keys == ["http://plex/library/metadata/1/children?a=1"]
+
+
+def test_cache_rows_keyed_with_a_token_are_dropped_on_open(tmp_path) -> None:
+    path = tmp_path / "db.sqlite"
+    Store(path).db.execute(
+        "insert into cache values ('http://plex/x?X-Plex-Token=SECRET', '2026-10-20', 'b')"
+    )
+    assert Store(path).db.execute("select count(*) from cache").fetchone()[0] == 0
